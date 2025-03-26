@@ -6,20 +6,11 @@ import (
     "net/http"
 )
 
-//go:embed index.html
-var htmlContent embed.FS
-
-func handler(w http.ResponseWriter, r *http.Request) {
-    content, err := htmlContent.ReadFile("index.html")
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
-    fmt.Fprint(w, string(content))
-}
+//go:embed static
+var static embed.FS
 
 func main() {
-    http.HandleFunc("/", handler)
+	http.Handle("/",http.FileServer(http.Dir("static")))
     fmt.Println("Server is running on :8080")
     http.ListenAndServe(":8080", nil)
 }
