@@ -1,0 +1,59 @@
+kind: pipeline
+type: docker
+name: default
+
+steps:
+  - name: build-frontend
+    image: node:18
+    commands:
+      - npm install
+      - npx @tailwindcss/cli -o ./public/tailwind.css
+
+  - name: build-go
+    image: golang:1.23
+    commands:
+      - go build -o blog.exe
+
+  - name: test
+    image: golang:1.23
+    commands:
+      - go test ./...
+    depends_on:
+      - build-go
+
+  - name: package
+    image: alpine
+    commands:
+      - mkdir -p release
+      - cp blog.exe release/
+      - cp -r content release/
+      - cp -r public release/
+      - cp index.html release/
+    depends_on:
+      - build-frontend
+      - test
+
+  - name: deploy
+    image: plugins/s3
+    settings:
+      bucket: my-blog-bucket
+      access_key:
+        from_secret: aws_access_key_id
+      secret_key:
+        from_secret: aws_secret_access_key
+      region: us-east-1
+      source: release/**/*
+      target: /
+    depends_on:
+      - package
+    when:
+      branch:
+        - main
+
+trigger:
+  branch:
+    - main
+    - develop
+  event:
+    - push
+    - pull_request
