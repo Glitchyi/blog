@@ -15,7 +15,9 @@ go run . # This is to get started with building the go binary and start
 To get started, setup tailwind cli tool in a new terminal (Optional)
 
 ```bash
-npm i # To install tailwind cli tool to generate the classes
+# To install tailwind cli tool to generate the classes
+npm install
 
-npx @tailwindcss/cli -o ./static/tailwind.css --watch
+# Generate the tailwind file and watch for updates
+npx @tailwindcss/cli -o ./public/tailwind.css --watch
 ```
