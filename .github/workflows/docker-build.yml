@@ -1,0 +1,41 @@
+name: Docker Build and Run
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build Docker image
+        run: docker build -t blog:latest .
+
+      - name: Run Docker container
+        run: docker run -d -p 8080:8080 --name blog blog:latest
+
+      - name: Verify application is running
+        run: |
+          sleep 10
+          curl --fail http://localhost:8080 || exit 1
