@@ -26,6 +26,8 @@ services:
       - ~/.docker/config.json:/config.json:ro
     environment:
       - WATCHTOWER_CLEANUP=true
+      # Kill container instantly on update, no graceful wait
+      - WATCHTOWER_STOP_TIMEOUT=0s
       # Enable webhook mode
       - WATCHTOWER_HTTP_API_UPDATE=true
       # Secure the webhook with a token from the .env file
