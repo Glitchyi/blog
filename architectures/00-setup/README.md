@@ -1,59 +1,86 @@
 ---
 title: "Setting Up The GitOps Pipeline"
-description: "Bootstrapping an automated deployment pipeline for my Raspberry Pi Kubernetes blog using GitHub Actions, GHCR, and Watchtower."
+description: "Bootstrapping an automated deployment pipeline for my Raspberry Pi blog using GitHub Actions, GHCR, Watchtower webhooks, and Cloudflare Tunnels."
 post: 0
 tier: 1
 namespace: gitops-blog-arch
 slug: setup
 date: "2026-04-03"
-tags: ["kubernetes", "gitops", "astro", "watchtower", "k3s"]
+tags: ["gitops", "astro", "watchtower", "docker", "cloudflare"]
 ---
 
 # Post 0: The Automated Architecture Blog Setup
 
-> A frictionless GitOps pipeline pulling from GitHub Container Registry to a Raspberry Pi cluster automatically using Watchtower.
+> A frictionless GitOps pipeline: push to `main`, GitHub builds a `linux/arm64` container, pushes it to GHCR, and webhooks a Raspberry Pi via a Cloudflare Tunnel to swap the live container in seconds.
 
 ## The Problem This Solves
 
-Writing and maintaining these architectural simulations involves a lot of trial, error, deploy, and teardown. If writing the blog posts required manually SSH-ing into the Raspberry Pi, building containers natively, and restarting pods every time a typo was fixed, the friction would kill the series before it began. A robust, set-and-forget GitOps pipeline is necessary to allow the focus to remain purely on architecture and documentation.
+Writing and maintaining these architectural simulations involves a lot of trial, error, deploy, and teardown. If publishing a blog update required manually SSH-ing into the Raspberry Pi, pulling images, and restarting containers every time a typo was fixed, the friction would kill the series before it began. A set-and-forget GitOps pipeline keeps the focus on architecture and documentation.
 
 ## Architecture Overview
 
-This blog acts as its own architectural implementation. It is structured around the premise of local development pushed to a remote repository which seamlessly transitions into active workloads.
+The blog itself is its own architectural implementation — a complete GitOps lifecycle in miniature.
 
-1. **Source of Truth**: The GitHub Repository stores all Astro code and Kubernetes manifests.
-2. **Continuous Integration**: GitHub Actions listens for `push` events to the `main` branch. 
-3. **Cross-Compilation**: The Action natively cross-compiles the Astro app into a minimized `linux/arm64` container.
-4. **Registry**: The built artifact is stored securely in GitHub Container Registry (GHCR).
-5. **Continuous Deployment**: A `watchtower` container sitting alongside the blog workload on the cluster polls GHCR and applies rolling updates automatically.
+1. **Source of Truth**: The GitHub repository stores all Astro source code, Docker configuration, and architecture manifests.
+2. **Continuous Integration**: GitHub Actions triggers on every `push` to the `main` branch.
+3. **Cross-Compilation**: QEMU + Docker Buildx cross-compiles the Astro static site into a minimal `linux/arm64` Nginx container image.
+4. **Registry**: The built image is pushed to GitHub Container Registry (GHCR) under `ghcr.io/glitchyi/blog:latest`.
+5. **Webhook Trigger**: The Action fires a `POST` request to a Cloudflare Tunnel-secured endpoint, instantly waking Watchtower.
+6. **Continuous Deployment**: Watchtower authenticates against GHCR, detects the new image digest, kills the old container, and starts the new one with `WATCHTOWER_STOP_TIMEOUT=0s`.
 
 ## What I'm Simulating
 
-This simulates a lightweight, single-node GitOps lifecycle without the heavyweight overhead of full-blown ArgoCD or Flux. It's a pragmatic, developer-focused pipeline optimizing for speed and low memory footprint.
+A lightweight, single-node GitOps lifecycle without the overhead of full ArgoCD or Flux. It trades sophistication for speed and a minimal memory footprint — pragmatic for a solo home-lab project running on a Raspberry Pi 5.
 
-## Kubernetes Setup
+## Components
 
-### Namespace
-While this project sets up the blog itself, the blog runs inside a Docker Compose stack or simple K3s deployment alongside Watchtower rather than a complex multi-pod construct.
+- **`Dockerfile`** — Multi-stage build: Node 22 Alpine builds the Astro site, Nginx Alpine serves the static output.
+- **`docker-compose.yml`** — Defines `astro-app` (port `3002`) and `watchtower` (port `3003`).
+- **`.github/workflows/deploy.yml`** — GitHub Action: checkout → QEMU → Buildx → GHCR push → Watchtower webhook.
+- **Cloudflare Tunnel** — Exposes `localhost:3003` (Watchtower's HTTP API) publicly and securely without opening firewall ports.
+- **`.env`** — Stores `WATCHTOWER_TOKEN` and `CR_PAT` for authentication. Never committed.
 
-`kubectl apply -f k8s/namespace.yaml`
+## How to Run It Yourself
 
-### Components
-- `docker-compose.yml` defining the `astro-app` and `watchtower` connection.
-- `deploy.yml` handling the Action.
+```bash
+# On the Raspberry Pi:
+mkdir -p ~/blog && cd ~/blog
+curl -sO https://raw.githubusercontent.com/Glitchyi/blog/main/docker-compose.yml
+curl -s https://raw.githubusercontent.com/Glitchyi/blog/main/.env.example > .env
+
+# Fill in WATCHTOWER_TOKEN and CR_PAT in .env, then:
+echo $CR_PAT | docker login ghcr.io -u Glitchyi --password-stdin
+docker compose up -d
+```
 
 ## What Actually Happened
 
-One of the most immediate hurdles was image architecture. Pushing standard Docker images built on a standard CI runner resulted in immediate `exec format error` crash loops because the Raspberry Pi strictly expects `arm64` binaries, while the runner generated `amd64`. Resolving this efficiently required explicitly utilizing Docker `setup-qemu-action` combined with `buildx`, dramatically optimizing the time-to-deploy while preserving the correct architecture.
+Several real problems surfaced during setup:
+
+**Architecture mismatch.** The first deploy crashed immediately with `exec format error`. A standard GitHub Actions runner builds `amd64` images. The Raspberry Pi only runs `arm64`. Fixing this required adding `docker/setup-qemu-action` and `docker/setup-buildx-action` with `platforms: linux/arm64` explicitly declared.
+
+**`~/.docker/config.json` was a directory.** A previous botched `docker login` left `config.json` as a directory instead of a file. Watchtower silently mounted the broken directory, couldn't parse credentials, and always returned `scanned=1 updated=0`. The fix was `sudo rm -rf ~/.docker/config.json` followed by a clean `docker login`.
+
+**Watchtower's scope labels didn't work.** Several approaches to limiting Watchtower's scope via `WATCHTOWER_SCOPE` and `com.centurylinklabs.watchtower.enable=true` labels failed silently with different versions. The working solution was to drop scoping entirely — on a single-purpose Pi running only the blog stack, monitoring all containers is the correct default.
+
+**Cloudflare cache served stale content.** Even after Watchtower successfully swapped the container (confirmed via logs), the live site showed old content. The culprit was Cloudflare's edge cache. A manual cache purge from the Cloudflare dashboard was required. Consider setting Cache Rules to `Bypass` for the blog tunnel hostname to prevent this.
 
 ## Tradeoffs
 
 | Strength | Weakness |
 |----------|----------|
-| Total automation — zero manual deploys required | Watchtower is a polling mechanism; not directly integrated with commit hooks |
-| Extremely low memory overhead on the Pi | No built-in rollback logic if a faulty frontend build goes live |
-| Completely private registry pulls secured seamlessly | The initial setup required manually configuring `.env` PAT tokens on the Pi |
+| Fully automated — zero manual deploys | No rollback: a bad build goes straight to production |
+| Webhook-based: updates in seconds, not minutes | Watchtower requires Pi to have outbound GHCR access |
+| Cloudflare Tunnel: no open firewall ports | Cloudflare cache can serve stale HTML after updates |
+| Minimal RAM footprint on the Pi | Single point of failure — one node, no redundancy |
 
 ## When to Use This (and When Not To)
 
-This pattern perfectly fits the "Indie Developer" or "Home Lab" archetype—where you have a single compute target (like a Pi) and need highly reliable, automated sync from code to server. It quickly breaks down if you need robust canary deployments, staged rollouts, or multi-cluster synchronization. When those needs arise, an actual GitOps controller like ArgoCD becomes strictly necessary.
+This pattern is ideal for solo home-lab projects with a single compute target and no rollback requirements. It breaks down the moment you need staged rollouts, canary deployments, or multi-node synchronisation. At that point, a proper GitOps controller like ArgoCD or Flux becomes necessary.
+
+## Resources
+
+- [Watchtower HTTP API docs](https://containrrr.dev/watchtower/http-api-updates/)
+- [Docker Buildx multi-platform builds](https://docs.docker.com/build/building/multi-platform/)
+- [Cloudflare Tunnel docs](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)
+- [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
