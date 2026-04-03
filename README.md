@@ -1,43 +1,74 @@
-# Astro Starter Kit: Minimal
+# System Architecture Simulations
 
-```sh
-bun create astro@latest -- --template minimal
-```
+Exploring foundational system architectures—dynamically deployed, stress-tested, and documented on a bare-metal Kubernetes cluster.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## 🚀 Overview
 
-## 🚀 Project Structure
+This repository houses a 12-part technical blog series aimed at simulating famous structural models (Monolithic, Microservices, Event-Driven, etc.) as actual, functioning deployments on a local Kubernetes cluster. 
 
-Inside of your Astro project, you'll see the following folders and files:
+Each pattern gets its own simulated workload, Kubernetes manifest package, and post-mortem review detailing trade-offs, scaling behaviors, and edge-cases.
+
+### The Stack
+- **Hardware**: Raspberry Pi 5 (16GB RAM) cluster
+- **Infrastructure**: k3s (Lightweight Kubernetes), Flannel/Cilium CNI, Traefik
+- **Blog Engine**: Astro v6 (Static Site Generation via modern Content Layer API)
+- **Styling**: Tailwind CSS v4 featuring `@tailwindcss/typography` & dark-mode styling mimicking GitHub schema.
+
+---
+
+## 🏗️ Repository Structure
 
 ```text
 /
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
+├── architectures/             ← Source of truth for all simulation posts and code
+│   ├── 01-monolithic/
+│   │   ├── k8s/               ← Namespace, deployments, services for this architecture
+│   │   └── README.md          ← The write-up/blog-post parsed by Astro
+│   └── ...
+├── src/                       ← Astro Blog Engine
+│   ├── content.config.ts      ← Glob loader map for external architectures/ folder
+│   ├── pages/                 
+│   │   ├── index.astro        ← Homepage with dashboard stats
+│   │   └── posts/[...id].astro ← Dynamic route generator mapping K8s READMEs to URLs
+│   └── styles/
 └── package.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+---
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+## 🛠️ How to View the Blog Locally
 
-Any static assets, like images, can be placed in the `public/` directory.
+This frontend is powered by [Astro](https://astro.build/). Content is automatically generated via glob loaders traversing the `architectures/` namespace.
 
-## 🧞 Commands
+```bash
+# 1. Install dependencies (Bun recommended)
+bun install
 
-All commands are run from the root of the project, from a terminal:
+# 2. Start the local development server with hot-reload
+bun run dev
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `bun install`             | Installs dependencies                            |
-| `bun dev`             | Starts local dev server at `localhost:4321`      |
-| `bun build`           | Build your production site to `./dist/`          |
-| `bun preview`         | Preview your build locally, before deploying     |
-| `bun astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `bun astro -- --help` | Get help using the Astro CLI                     |
+# 3. Build for production (outputs to ./dist)
+bun run build
+```
 
-## 👀 Want to learn more?
+---
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+## ☸️ How to Run the Infrastructure Simulations
+
+If you want to spin up any of the architectural patterns documented in this repository onto your own cluster:
+
+```bash
+# Example: Deploying the monolithic simulation
+# Always apply the namespace first
+kubectl apply -f architectures/01-monolithic/k8s/namespace.yaml
+
+# Apply the structural deployments/services
+kubectl apply -f architectures/01-monolithic/k8s/
+
+# Monitor the simulation boot process
+kubectl get pods -n monolithic-arch -w
+```
+> **Storage Note:** Ensure persistent volumes correctly bind to external SSDs if deploying IOPS-heavy simulations. Avoid utilizing SD card boot storage for database state tracking.
+
+---
+_Built by Advaith Narayanan ([Glitchy](https://glitchy.systems/))_

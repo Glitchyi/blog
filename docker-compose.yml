@@ -2,12 +2,12 @@ services:
   astro-app:
     # Replace <github_username> and <repo_name> with your actual GitHub username and repository name
     # e.g., image: ghcr.io/octocat/architecture-blog:latest
-    image: ghcr.io/<github_username>/<repo_name>:latest
+    image: ghcr.io/glitchyi/blog:latest
     container_name: astro-app
     ports:
       # Nginx inside the container uses port 80 by default.
       # You can change the host port if "80" conflicts with other services on the Pi.
-      - "80:80"
+      - "3002:80"
     restart: unless-stopped
     labels:
       - "com.centurylinklabs.watchtower.scope=astro-app-scope"
