@@ -52,9 +52,12 @@ const lastUpdated = posts.length > 0
 							</a>
 						</h2>
 						<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 mb-3 font-mono">
-							<span>Post #{post.data.post}</span>
-							<span class="hidden sm:inline">•</span>
-							<span>{post.data.date}</span>
+							<span class="bg-zinc-800 text-zinc-200 font-bold px-2 py-0.5 rounded border border-white/10 text-[10px] uppercase tracking-widest shadow-sm"><span class="text-white/30 mr-0.5">#</span>{post.data.post}</span>
+							<span class="hidden sm:inline opacity-50">•</span>
+							<span class="text-zinc-500">{post.data.date}</span>
+							{post.data.tags && post.data.tags.map((tag: string) => (
+								<span class="text-indigo-400 font-medium text-[10px] ml-1">#{tag}</span>
+							))}
 						</div>
 						<p class="text-zinc-300 text-sm mb-4 leading-relaxed bg-[#000005] p-3 rounded-xl border border-white/5 shadow-inner shadow-black/80">{post.data.description}</p>
 						<a href={`/posts/${urlSlug}`} class="inline-flex items-center text-xs font-medium text-white hover:text-zinc-300 transition-colors mt-auto self-start">
@@ -70,7 +73,7 @@ const lastUpdated = posts.length > 0
 					<p class="font-medium text-zinc-400 mb-1">
 						Built by <a href="https://glitchy.systems/" target="_blank" class="text-white hover:underline decoration-white/30 underline-offset-4 transition-all">Advaith Narayanan (Glitchy)</a>
 					</p>
-					<p class="font-mono text-[10px] uppercase tracking-wider text-zinc-600">DevOps Engineer • Systems Programming • CS Student</p>
+					<p class="font-mono text-[10px] uppercase tracking-wider text-zinc-600">Software Developer • Systems Programming • Cloud Engineering</p>
 				</div>
 				<div class="flex gap-4 font-mono uppercase tracking-wider text-[10px]">
 					<a href="https://twitter.com/advaithnarayan" target="_blank" class="hover:text-white transition-colors">Twitter</a>
