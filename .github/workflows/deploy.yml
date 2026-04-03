@@ -56,5 +56,5 @@ jobs:
       # Trigger Watchtower webhook for instant updating!
       - name: Trigger Watchtower Webhook
         run: |
-          curl -H "Authorization: Bearer ${{ secrets.WATCHTOWER_TOKEN }}" \
+          curl -X POST -H "Authorization: Bearer ${{ secrets.WATCHTOWER_TOKEN }}" \
                ${{ secrets.WATCHTOWER_URL }}/v1/update
