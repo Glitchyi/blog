@@ -1,0 +1,32 @@
+services:
+  astro-app:
+    # Replace <github_username> and <repo_name> with your actual GitHub username and repository name
+    # e.g., image: ghcr.io/octocat/architecture-blog:latest
+    image: ghcr.io/<github_username>/<repo_name>:latest
+    container_name: astro-app
+    ports:
+      # Nginx inside the container uses port 80 by default.
+      # You can change the host port if "80" conflicts with other services on the Pi.
+      - "80:80"
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.scope=astro-app-scope"
+    # Use standard restart policies and ensure low memory limits if needed
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  watchtower:
+    image: nicholas-fedor/watchtower:latest
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Mount the Docker config to provide GHCR authentication (read-only)
+      - ~/.docker/config.json:/config.json:ro
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=300
+      # Only watch the astro-app container to prevent it from updating everything on the Pi
+      - WATCHTOWER_SCOPE=astro-app-scope
+    restart: unless-stopped

@@ -1,0 +1,83 @@
+---
+import { getCollection } from 'astro:content';
+import '../styles/global.css';
+
+const posts = await getCollection('architectures');
+posts.sort((a, b) => a.data.post - b.data.post);
+
+const totalPosts = posts.length;
+const totalChars = posts.reduce((acc, post) => acc + ((post.body || '').length), 0);
+const lastUpdated = posts.length > 0 
+	? new Date(Math.max(...posts.map(p => new Date(p.data.date).getTime()))).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) 
+	: 'Never';
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,300,400&display=swap" rel="stylesheet">
+		<title>Architecture Blog</title>
+	</head>
+	<body class="bg-[#000005] text-zinc-100 antialiased min-h-screen" style="font-family: 'Satoshi', system-ui, sans-serif;">
+		<main class="max-w-4xl mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-10 border-x border-white/5 min-h-screen">
+			<header class="mb-10 border-b border-white/5 pb-8">
+				<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-mono text-zinc-600 mb-4 tracking-widest sm:tracking-[0.2em] uppercase font-bold">
+					<span>SYS.STATS</span>
+					<span class="text-zinc-800 hidden sm:inline">/</span>
+					<span>{totalPosts} DEPLOYED</span>
+					<span class="text-zinc-800 hidden sm:inline">/</span>
+					<span>{totalChars.toLocaleString()} BYTES</span>
+					<span class="text-zinc-800 hidden sm:inline">/</span>
+					<span>LST.UPD: {lastUpdated}</span>
+				</div>
+				<h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-3">
+					System Architecture <span class="text-white/20">Simulations</span>
+				</h1>
+				<p class="text-sm sm:text-base text-zinc-400 font-medium max-w-2xl leading-relaxed">
+					Exploring foundational system architectures—dynamically deployed, stress-tested, and documented on a bare-metal Kubernetes cluster.
+				</p>
+			</header>
+			
+			<div class="space-y-6">
+				{posts.map(post => {
+					const urlSlug = post.data.slug || post.id;
+					return (
+					<article class="p-5 rounded-2xl border border-white/5 bg-white/[0.02] shadow-2xl shadow-black/60 flex flex-col">
+						<h2 class="text-lg sm:text-xl font-bold text-zinc-100 mb-1">
+							<a href={`/posts/${urlSlug}`} class="hover:text-white hover:underline decoration-white/30 underline-offset-4 transition-all">
+								{post.data.title}
+							</a>
+						</h2>
+						<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 mb-3 font-mono">
+							<span>Post #{post.data.post}</span>
+							<span class="hidden sm:inline">•</span>
+							<span>{post.data.date}</span>
+						</div>
+						<p class="text-zinc-300 text-sm mb-4 leading-relaxed bg-[#000005] p-3 rounded-xl border border-white/5 shadow-inner shadow-black/80">{post.data.description}</p>
+						<a href={`/posts/${urlSlug}`} class="inline-flex items-center text-xs font-medium text-white hover:text-zinc-300 transition-colors mt-auto self-start">
+							Read Simulation Log <span class="ml-1">→</span>
+						</a>
+					</article>
+				)})}
+				{posts.length === 0 && <p class="text-zinc-500 italic">No architectures found yet.</p>}
+			</div>
+
+			<footer class="mt-24 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 text-xs text-zinc-500">
+				<div>
+					<p class="font-medium text-zinc-400 mb-1">
+						Built by <a href="https://glitchy.systems/" target="_blank" class="text-white hover:underline decoration-white/30 underline-offset-4 transition-all">Advaith Narayanan (Glitchy)</a>
+					</p>
+					<p class="font-mono text-[10px] uppercase tracking-wider text-zinc-600">DevOps Engineer • Systems Programming • CS Student</p>
+				</div>
+				<div class="flex gap-4 font-mono uppercase tracking-wider text-[10px]">
+					<a href="https://twitter.com/advaithnarayan" target="_blank" class="hover:text-white transition-colors">Twitter</a>
+					<a href="https://glitchy.systems/" target="_blank" class="hover:text-white transition-colors">Portfolio</a>
+				</div>
+			</footer>
+		</main>
+	</body>
+</html>
