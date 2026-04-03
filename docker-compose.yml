@@ -9,8 +9,6 @@ services:
       # You can change the host port if "80" conflicts with other services on the Pi.
       - "3002:80"
     restart: unless-stopped
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
     # Use standard restart policies and ensure low memory limits if needed
     deploy:
       resources:
@@ -28,8 +26,6 @@ services:
       - ~/.docker/config.json:/config.json:ro
     environment:
       - WATCHTOWER_CLEANUP=true
-      # Only watch containers fully opted-in with the enable label
-      - WATCHTOWER_LABEL_ENABLE=true
       # Enable webhook mode
       - WATCHTOWER_HTTP_API_UPDATE=true
       # Secure the webhook with a token from the .env file
