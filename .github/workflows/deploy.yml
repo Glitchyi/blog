@@ -2,8 +2,8 @@ name: Build and Push to GHCR
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'latest'
 
 jobs:
   build-and-push:
@@ -52,3 +52,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=ghcr.io/${{ env.REPO }}:buildcache
           cache-to: type=registry,ref=ghcr.io/${{ env.REPO }}:buildcache,mode=max
+
+      # Trigger Watchtower webhook for instant updating!
+      - name: Trigger Watchtower Webhook
+        run: |
+          curl -H "Authorization: Bearer ${{ secrets.WATCHTOWER_TOKEN }}" \
+               ${{ secrets.WATCHTOWER_URL }}/v1/update
