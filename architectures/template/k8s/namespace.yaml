@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: template-arch
+  labels:
+    series: architecture-blog
+    post: "0X"

@@ -4,10 +4,12 @@ import '../../styles/global.css';
 
 export async function getStaticPaths() {
 	const posts = await getCollection('architectures');
-	return posts.map(post => ({
-		params: { id: post.data.slug || post.id },
-		props: { post },
-	}));
+	return posts
+		.filter(post => post.data.slug !== 'template')
+		.map(post => ({
+			params: { id: post.data.slug || post.id },
+			props: { post },
+		}));
 }
 
 const { post } = Astro.props;
@@ -25,26 +27,27 @@ const { Content } = await render(post);
 		<title>{post.data.title} - Architecture Blog</title>
 	</head>
 	<body class="bg-[#000005] text-zinc-100 antialiased min-h-screen" style="font-family: 'Satoshi', system-ui, sans-serif;">
-		<main class="max-w-4xl mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-16 border-x border-white/5 min-h-screen">
+		<main class="max-w-4xl mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-16 border-x border-white/10 min-h-screen">
 			<a href="/" class="inline-flex items-center text-zinc-500 hover:text-white transition-colors mb-8 md:mb-12 font-medium">
 				<span class="mr-2">←</span> Back to index
 			</a>
 
 			<article class="prose prose-invert prose-zinc max-w-none 
 			prose-headings:font-semibold 
-			prose-h1:text-3xl sm:prose-h1:text-4xl prose-h1:border-b prose-h1:border-white/10 prose-h1:pb-3 prose-h1:mb-6
-			prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:border-b prose-h2:border-white/10 prose-h2:pb-2 prose-h2:mt-10 prose-h2:mb-4
+			prose-h1:text-3xl sm:prose-h1:text-4xl prose-h1:border-b prose-h1:border-white/20 prose-h1:pb-3 prose-h1:mb-6
+			prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:border-b prose-h2:border-white/20 prose-h2:pb-2 prose-h2:mt-10 prose-h2:mb-4
 			prose-h3:text-lg sm:prose-h3:text-xl
 			prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
-			prose-pre:border prose-pre:border-white/10 prose-pre:bg-[#0d1117] prose-pre:rounded-xl
+			prose-pre:border prose-pre:border-white/20 prose-pre:bg-[#0d1117] prose-pre:rounded-xl prose-pre:p-5
 			prose-code:bg-white/10 prose-code:rounded-md prose-code:py-[0.2rem] prose-code:px-[0.4rem] prose-code:font-mono prose-code:text-xs sm:prose-code:text-sm prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
+			[&_pre_code]:bg-transparent [&_pre_code]:p-0
 			prose-blockquote:border-l-4 prose-blockquote:border-white/20 prose-blockquote:text-zinc-400 prose-blockquote:not-italic prose-blockquote:bg-white/[0.02] prose-blockquote:py-1 prose-blockquote:pr-4
-			prose-table:border prose-table:border-white/10 prose-th:border prose-th:border-white/10 prose-th:p-3 prose-th:bg-white/[0.02] prose-td:border prose-td:border-white/10 prose-td:p-3
+			prose-table:border prose-table:border-white/20 prose-th:border prose-th:border-white/20 prose-th:p-3 prose-th:bg-white/[0.02] prose-td:border prose-td:border-white/20 prose-td:p-3
 			">
-				<header class="mb-8 md:mb-12 border-b border-white/10 pb-6 md:pb-8">
+				<header class="mb-8 md:mb-12 border-b border-white/20 pb-6 md:pb-8">
 					<h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">{post.data.title}</h1>
 					<div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-zinc-400 font-mono text-xs sm:text-sm">
-						<span class="bg-white/5 px-2 py-1 rounded">Tier {post.data.tier}</span>
+						<span class="bg-white/10 px-2 py-1 rounded">Tier {post.data.tier}</span>
 						<span class="hidden sm:inline">•</span>
 						<span>{post.data.date}</span>
 						<span class="hidden sm:inline">•</span>
@@ -57,18 +60,62 @@ const { Content } = await render(post);
 				</div>
 			</article>
 
-			<footer class="mt-24 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 text-xs text-zinc-500">
+			<footer class="mt-24 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 text-xs text-zinc-500">
 				<div>
 					<p class="font-medium text-zinc-400 mb-1">
 						Built by <a href="https://glitchy.systems/" target="_blank" class="text-white hover:underline decoration-white/30 underline-offset-4 transition-all">Advaith Narayanan (Glitchy)</a>
 					</p>
-					<p class="font-mono text-[10px] uppercase tracking-wider text-zinc-600">DevOps Engineer • Systems Programming • CS Student</p>
+					<p class="font-mono text-[10px] uppercase tracking-wider text-zinc-600">Software Developer @ IBM • Systems Programming • Cloud Engineering</p>
 				</div>
 				<div class="flex gap-4 font-mono uppercase tracking-wider text-[10px]">
+					<a href="https://github.com/Glitchyi" target="_blank" class="hover:text-white transition-colors">GitHub</a>
 					<a href="https://twitter.com/advaithnarayan" target="_blank" class="hover:text-white transition-colors">Twitter</a>
 					<a href="https://glitchy.systems/" target="_blank" class="hover:text-white transition-colors">Portfolio</a>
 				</div>
 			</footer>
 		</main>
+
+		<script>
+			document.querySelectorAll('pre').forEach((pre) => {
+				// Style the pre block to allow absolute positioning of the button
+				pre.classList.add('relative', 'group');
+
+				const copyBtn = document.createElement('button');
+				copyBtn.innerHTML = `
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+						<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+					</svg>`;
+				copyBtn.className = 'absolute top-3 right-3 p-1.5 bg-white/5 hover:bg-white/10 text-zinc-500 hover:text-zinc-300 rounded-md border border-white/5 opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-md z-10 flex items-center justify-center';
+				copyBtn.setAttribute('title', 'Copy code');
+				
+				copyBtn.addEventListener('click', async () => {
+					const codeBlock = pre.querySelector('code');
+					if (!codeBlock) return;
+					
+					try {
+						await navigator.clipboard.writeText(codeBlock.innerText);
+						copyBtn.innerHTML = `
+							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="20 6 9 17 4 12"></polyline>
+							</svg>`;
+						copyBtn.classList.add('bg-white/10', 'border-green-500/30');
+						
+						setTimeout(() => {
+							copyBtn.innerHTML = `
+								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+									<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+								</svg>`;
+							copyBtn.classList.remove('bg-white/10', 'border-green-500/30');
+						}, 2000);
+					} catch (err) {
+						console.error('Failed to copy text: ', err);
+					}
+				});
+
+				pre.appendChild(copyBtn);
+			});
+		</script>
 	</body>
 </html>
