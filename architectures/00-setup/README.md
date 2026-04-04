@@ -6,7 +6,7 @@ tier: 1
 namespace: gitops-blog-arch
 slug: setup
 date: "2026-04-03"
-tags: ["gitops", "astro", "watchtower", "docker", "cloudflare"]
+tags: ["gitops", "astro", "watchtower", "docker", "cloudflare", "ai"]
 ---
 
 # Post 0: The Automated Architecture Blog Setup
@@ -64,6 +64,16 @@ Several real problems surfaced during setup:
 **Watchtower's scope labels didn't work.** Several approaches to limiting Watchtower's scope via `WATCHTOWER_SCOPE` and `com.centurylinklabs.watchtower.enable=true` labels failed silently with different versions. The working solution was to drop scoping entirely — on a single-purpose Pi running only the blog stack, monitoring all containers is the correct default.
 
 **Cloudflare cache served stale content.** Even after Watchtower successfully swapped the container (confirmed via logs), the live site showed old content. The culprit was Cloudflare's edge cache. A manual cache purge from the Cloudflare dashboard was required. Consider setting Cache Rules to `Bypass` for the blog tunnel hostname to prevent this.
+
+## The Frontend Evolution (Iterative AI Enhancements)
+
+While the initial deployment focused on hardware automation, building an aesthetically rich and highly accessible UI required significant iteration. We evolved the initial layout into a custom, dark-themed, information-dense structural aesthetic. 
+
+Crucial custom implementations added post-launch include:
+- **Responsive Layout Architecture**: Overhauled the `<main>` container boundaries shrinking `px-10` paddings down to `px-5` on mobile interfaces, and implemented aggressive `flex-wrap` and dynamic scaling on header typography (`text-3xl sm:text-4xl`) so massive architecture headlines do not abruptly wrap on older iPhones.
+- **Dynamic Routing Slugs**: Replaced the default Astro folder-routing logic (`[...id].astro`) with a dynamic Zod schema loader, explicitly overriding slugs directly from the markdown frontmatter (e.g. `slug: "monolithic"`) instead of inheriting clunky nested paths like `posts/01-monolithic/readme`.
+- **Advanced Markdown Injection**: Stripped the standard `@tailwindcss/typography` formatting. We reconstructed the raw `github-dark` markdown theme by defining custom child selectors `[&_pre_code]:bg-transparent` across code wrappers. This eliminated "double-layered highlighting" bugs and forced the underlying GitHub `#0d1117` `<pre>` rendering styling.
+- **Dynamic Clipboard APIs**: Injected raw client-side JavaScript via Astro components directly targeting all `<pre>` bounds. This loops through code snippets, appends responsive SVG `Copy` buttons, morphs them to green checkboxes (`#4ade80`) on success, and interacts smoothly with the OS Clipboard without the necessity of bloated third-party Rehype React plugins.
 
 ## Tradeoffs
 

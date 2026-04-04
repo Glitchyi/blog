@@ -14,6 +14,7 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content } = await render(post);
+const isAIPost = post.data.tags && post.data.tags.some((t: string) => t.toLowerCase() === 'ai');
 ---
 
 <html lang="en">
@@ -45,7 +46,7 @@ const { Content } = await render(post);
 			prose-table:border prose-table:border-white/20 prose-th:border prose-th:border-white/20 prose-th:p-3 prose-th:bg-white/[0.02] prose-td:border prose-td:border-white/20 prose-td:p-3
 			">
 				<header class="mb-8 md:mb-12 border-b border-white/20 pb-6 md:pb-8">
-					<h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">{post.data.title}</h1>
+					<h1 class={`text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4 ${isAIPost ? 'text-emerald-50 drop-shadow-[0_0_12px_rgba(52,211,153,0.35)]' : 'text-white'}`}>{post.data.title}</h1>
 					<div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-zinc-400 font-mono text-xs sm:text-sm">
 						<span class="bg-white/10 px-2 py-1 rounded">Tier {post.data.tier}</span>
 						<span class="hidden sm:inline">•</span>
@@ -53,6 +54,18 @@ const { Content } = await render(post);
 						<span class="hidden sm:inline">•</span>
 						<span class="text-zinc-500 w-full sm:w-auto mt-1 sm:mt-0">Namespace: {post.data.namespace}</span>
 					</div>
+					{post.data.tags && post.data.tags.length > 0 && (
+						<div class="flex flex-wrap gap-2 mt-3">
+							{post.data.tags.map((tag: string) => {
+								const isAI = tag.toLowerCase() === 'ai';
+								return (
+									<span class={`font-mono font-medium text-[11px] px-2 py-0.5 rounded-md border transition-all ${isAI ? 'text-emerald-400 bg-emerald-950/50 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'text-indigo-400 bg-indigo-950/40 border-indigo-500/20'}`}>
+										#{tag}
+									</span>
+								);
+							})}
+						</div>
+					)}
 				</header>
 				
 				<div class="mt-8 text-sm sm:text-base text-zinc-300 leading-relaxed font-medium">
