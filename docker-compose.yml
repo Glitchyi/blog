@@ -23,7 +23,7 @@ services:
       - "3003:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ~/.docker/config.json:/config.json:ro
+      - /home/glitchy/.docker/config.json:/config.json
     environment:
       - WATCHTOWER_CLEANUP=true
       # Kill container instantly on update, no graceful wait
