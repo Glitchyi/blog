@@ -6,12 +6,37 @@ let posts = await getCollection('architectures');
 posts = posts.filter(post => post.data.slug !== 'template');
 posts.sort((a, b) => a.data.post - b.data.post);
 
+const seriesMap = new Map<string, typeof posts>();
+
+for (const post of posts) {
+	const seriesName = post.data.namespace || 'uncategorized';
+	const seriesPosts = seriesMap.get(seriesName) || [];
+	seriesPosts.push(post);
+	seriesMap.set(seriesName, seriesPosts);
+}
+
+const series = Array.from(seriesMap.entries())
+	.map(([namespace, entries]) => ({
+		namespace,
+		title: namespace
+			.split('-')
+			.filter(part => part !== 'arch')
+			.map(part => part.charAt(0).toUpperCase() + part.slice(1))
+			.join(' '),
+		posts: entries.sort((a, b) => a.data.post - b.data.post),
+	}))
+	.sort((a, b) => {
+		const firstPostA = a.posts[0]?.data.post ?? 0;
+		const firstPostB = b.posts[0]?.data.post ?? 0;
+		return firstPostA - firstPostB;
+	});
+
 const totalPosts = posts.length;
-const totalChars = posts.reduce((acc, post) => acc + ((post.body || '').length), 0);
-const namespaces = [...new Set(posts.map(p => p.data.namespace))].filter(Boolean);
-const tiers = [...new Set(posts.map(p => p.data.tier))].filter(Boolean).sort((a,b)=>a-b);
-const lastUpdated = posts.length > 0 
-	? new Date(Math.max(...posts.map(p => new Date(p.data.date).getTime()))).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) 
+const totalSeries = series.length;
+const namespaces = [...new Set(posts.map(post => post.data.namespace))].filter(Boolean);
+const tiers = [...new Set(posts.map(post => post.data.tier))].filter(Boolean).sort((a, b) => a - b);
+const lastUpdated = posts.length > 0
+	? new Date(Math.max(...posts.map(post => new Date(post.data.date).getTime()))).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 	: 'Never';
 ---
 
@@ -25,113 +50,144 @@ const lastUpdated = posts.length > 0
 		<title>Architecture Blog</title>
 	</head>
 	<body class="bg-[#000005] text-zinc-100 antialiased min-h-screen" style="font-family: 'Satoshi', system-ui, sans-serif;">
-		<main class="max-w-4xl mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-10 border-x border-white/10 min-h-screen">
-			<header class="mb-10 border-b border-white/10 pb-8">
-				<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-mono text-zinc-600 mb-4 tracking-widest sm:tracking-[0.2em] uppercase font-bold">
-					<span>SYS.STATS</span>
-					<span class="text-zinc-800 hidden sm:inline">/</span>
-					<span>{totalPosts} DEPLOYED</span>
-					<span class="text-zinc-800 hidden sm:inline">/</span>
-					<span>{totalChars.toLocaleString()} BYTES</span>
-					<span class="text-zinc-800 hidden sm:inline">/</span>
-					<span>LST.UPD: {lastUpdated}</span>
-				</div>
-				<h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-3">
-					System Architecture <span class="text-white/20">Simulations</span>
-				</h1>
-				<p class="text-sm sm:text-base text-zinc-400 font-medium max-w-2xl leading-relaxed">
-					Exploring foundational system architectures—dynamically deployed, stress-tested, and documented on a bare-metal Kubernetes cluster.
-				</p>
-			</header>
-			
-			<details class="group mb-8 rounded-md border border-white/10 bg-[#0d1117] overflow-hidden">
-				<summary class="flex cursor-pointer items-center justify-between px-4 py-2 hover:bg-white/[0.02] transition-colors list-none select-none [&::-webkit-details-marker]:hidden">
-					<div class="flex items-center gap-3">
-						<span class="font-mono text-zinc-300 font-bold text-xs">Filter architectures</span>
-						<span class="px-2 py-0.5 rounded-[4px] border border-white/10 text-[10px] text-zinc-400 bg-[#000005]">Collapsed</span>
+		<main class="max-w-4xl mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-16 border-x border-white/10 min-h-screen">
+			<article class="prose prose-invert prose-zinc max-w-none
+				prose-headings:font-semibold
+				prose-h1:text-3xl sm:prose-h1:text-4xl md:prose-h1:text-5xl prose-h1:border-b prose-h1:border-white/20 prose-h1:pb-3 prose-h1:mb-6
+				prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:border-b prose-h2:border-white/20 prose-h2:pb-2 prose-h2:mt-12 prose-h2:mb-4
+				prose-h3:text-lg sm:prose-h3:text-xl
+				prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline
+				prose-code:bg-white/10 prose-code:rounded-md prose-code:py-[0.2rem] prose-code:px-[0.4rem] prose-code:font-mono prose-code:text-xs sm:prose-code:text-sm prose-code:font-normal prose-code:before:content-none prose-code:after:content-none">
+				<header class="mb-10 border-b border-white/20 pb-8">
+					<div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-zinc-500 font-mono text-xs sm:text-sm mb-5">
+						<span>{totalPosts} posts</span>
+						<span class="hidden sm:inline">/</span>
+						<span>{totalSeries} series</span>
+						<span class="hidden sm:inline">/</span>
+						<span>Updated {lastUpdated}</span>
 					</div>
-					<div class="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
-						<svg class="w-3 h-3 group-open:hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-						<svg class="w-3 h-3 hidden group-open:block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
-						<span class="group-open:hidden">Show filters</span>
-						<span class="hidden group-open:inline">Hide filters</span>
-					</div>
-				</summary>
-				<div class="border-t border-white/10 p-4 bg-[#000005]">
-					<div class="flex flex-col sm:flex-row gap-4">
-						<div class="flex flex-col gap-1.5 w-full sm:w-auto">
-							<label class="text-[10px] font-mono uppercase text-zinc-500 tracking-wider">Namespace / Topic</label>
-							<select id="filter-namespace" class="bg-[#0d1117] border border-white/10 rounded-md text-zinc-300 text-sm px-3 py-1.5 focus:border-white/20 focus:ring-1 focus:ring-white/20 outline-none cursor-pointer">
-								<option value="all">Everything</option>
-								{namespaces.map(ns => <option value={ns}>{ns}</option>)}
-							</select>
-						</div>
-						<div class="flex flex-col gap-1.5 w-full sm:w-auto">
-							<label class="text-[10px] font-mono uppercase text-zinc-500 tracking-wider">System Complexity</label>
-							<select id="filter-tier" class="bg-[#0d1117] border border-white/10 rounded-md text-zinc-300 text-sm px-3 py-1.5 focus:border-white/20 focus:ring-1 focus:ring-white/20 outline-none cursor-pointer">
-								<option value="all">All Tiers</option>
-								{tiers.map(t => <option value={t}>Tier {t}</option>)}
-							</select>
-						</div>
-						<div class="flex flex-col gap-1.5 w-full sm:w-auto">
-							<div class="flex items-center gap-1.5">
-								<label class="text-[10px] font-mono uppercase text-zinc-500 tracking-wider">AI Generated Posts</label>
-								<div class="relative group/tip">
-									<span id="ai-info-btn" class="text-[10px] font-mono text-zinc-600 border border-white/10 rounded-full w-3.5 h-3.5 flex items-center justify-center cursor-pointer hover:text-zinc-300 hover:border-white/20 transition-colors select-none">i</span>
-									<div id="ai-info-tooltip" class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 px-3 py-2 rounded-lg bg-zinc-900 border border-white/10 text-zinc-300 text-[11px] leading-relaxed font-sans normal-case tracking-normal shadow-xl opacity-0 group-hover/tip:opacity-100 transition-opacity z-50 pointer-events-none">
-										Some of these posts were written entirely using AI, because I was lazy and it honestly documents things I already know ᓚᘏᗢ
-										<div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-900"></div>
-									</div>
+					<h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">System Architecture Notes</h1>
+					<p class="text-zinc-300 text-base sm:text-lg leading-relaxed max-w-2xl">
+						A running set of architecture posts, grouped into series. Each series follows a project or topic from the initial setup through the tradeoffs, failed assumptions, and working deployment details.
+					</p>
+				</header>
+
+				<section aria-labelledby="series-index">
+					<h2 id="series-index">Series Index</h2>
+					<details class="not-prose group mb-6 rounded-md border border-white/10 bg-[#0d1117] overflow-hidden">
+						<summary class="flex cursor-pointer items-center justify-between px-4 py-2 hover:bg-white/[0.02] transition-colors list-none select-none [&::-webkit-details-marker]:hidden">
+							<div class="flex items-center gap-3">
+								<span class="font-mono text-zinc-300 font-bold text-xs">Filter posts</span>
+								<span class="px-2 py-0.5 rounded-[4px] border border-white/10 text-[10px] text-zinc-400 bg-[#000005]">Series aware</span>
+							</div>
+							<div class="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+								<svg class="w-3 h-3 group-open:hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+								<svg class="w-3 h-3 hidden group-open:block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+								<span class="group-open:hidden">Show filters</span>
+								<span class="hidden group-open:inline">Hide filters</span>
+							</div>
+						</summary>
+						<div class="border-t border-white/10 p-4 bg-[#000005]">
+							<div class="flex flex-col sm:flex-row gap-4">
+								<div class="flex flex-col gap-1.5 w-full sm:w-auto">
+									<label class="text-[10px] font-mono uppercase text-zinc-500 tracking-wider" for="filter-namespace">Series / Topic</label>
+									<select id="filter-namespace" class="bg-[#0d1117] border border-white/10 rounded-md text-zinc-300 text-sm px-3 py-1.5 focus:border-white/20 focus:ring-1 focus:ring-white/20 outline-none cursor-pointer">
+										<option value="all">Everything</option>
+										{namespaces.map(namespace => <option value={namespace}>{namespace}</option>)}
+									</select>
+								</div>
+								<div class="flex flex-col gap-1.5 w-full sm:w-auto">
+									<label class="text-[10px] font-mono uppercase text-zinc-500 tracking-wider" for="filter-tier">System Complexity</label>
+									<select id="filter-tier" class="bg-[#0d1117] border border-white/10 rounded-md text-zinc-300 text-sm px-3 py-1.5 focus:border-white/20 focus:ring-1 focus:ring-white/20 outline-none cursor-pointer">
+										<option value="all">All Tiers</option>
+										{tiers.map(tier => <option value={tier}>Tier {tier}</option>)}
+									</select>
+								</div>
+								<div class="flex flex-col gap-1.5 w-full sm:w-auto">
+									<label class="text-[10px] font-mono uppercase text-zinc-500 tracking-wider">AI Generated Posts</label>
+									<button id="toggle-ai" data-active="true" class="flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm font-mono cursor-pointer transition-all bg-emerald-950/50 border-emerald-500/30 text-emerald-400 hover:bg-emerald-950">
+										<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+										Enabled
+									</button>
 								</div>
 							</div>
-							<button id="toggle-ai" data-active="true" class="flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm font-mono cursor-pointer transition-all bg-emerald-950/50 border-emerald-500/30 text-emerald-400 hover:bg-emerald-950">
-								<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
-								Enabled
-							</button>
 						</div>
-					</div>
-				</div>
-			</details>
-
-			<div class="space-y-6" id="architectures-list">
-				{posts.map(post => {
-					const urlSlug = post.data.slug || post.id;
-					const isAIPost = post.data.tags && post.data.tags.some((t: string) => t.toLowerCase() === 'ai');
-					return (
-					<article 
-						class="post-card p-5 rounded-2xl border border-white/10 bg-white/[0.02] shadow-2xl shadow-black/60 flex flex-col relative transition-opacity duration-300"
-						data-namespace={post.data.namespace || ''}
-						data-tier={post.data.tier || ''}
-						data-ai={isAIPost ? 'true' : 'false'}
-					>
-						<div class="absolute top-5 right-5 bg-zinc-800 text-zinc-200 font-bold px-2 py-0.5 rounded border border-white/20 text-[10px] uppercase tracking-widest shadow-sm">
-							<span class="text-white/30 mr-0.5">#</span>{post.data.post}
-						</div>
-						<h2 class="text-lg sm:text-xl pr-12 font-bold mb-1">
-							<a href={`/posts/${urlSlug}`} class="text-zinc-100 hover:text-white hover:underline decoration-white/30 underline-offset-4 transition-all">
-								{post.data.title}
-							</a>
-						</h2>
-						<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 mb-3 font-mono">
-							<span class="text-zinc-500">{post.data.date}</span>
-							{post.data.tags && post.data.tags.length > 0 && <span class="hidden sm:inline opacity-50">•</span>}
-							{post.data.tags && post.data.tags.map((tag: string) => {
-								const isAI = tag.toLowerCase() === 'ai';
-								return (
-									<span class={`font-medium text-[10px] sm:ml-1 transition-all ${isAI ? 'text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-md border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'text-indigo-400'}`}>
-										#{tag}
+					</details>
+					<div class="not-prose grid gap-3 sm:grid-cols-2">
+						{series.map(group => (
+							<a href={`#${group.namespace}`} class="series-index-card block rounded-lg border border-white/10 bg-white/[0.02] p-4 hover:border-white/25 hover:bg-white/[0.04] transition-colors" data-namespace={group.namespace}>
+								<div class="flex items-start justify-between gap-3">
+									<div>
+										<h3 class="text-base font-bold text-white mb-1">{group.title}</h3>
+										<p class="text-xs font-mono text-zinc-500">{group.namespace}</p>
+									</div>
+									<span class="shrink-0 rounded-md border border-white/10 bg-[#0d1117] px-2 py-1 text-xs font-mono text-zinc-400">
+										{group.posts.length} {group.posts.length === 1 ? 'post' : 'posts'}
 									</span>
+								</div>
+							</a>
+						))}
+					</div>
+				</section>
+
+				{series.map(group => (
+					<section class="series-section" id={group.namespace} aria-labelledby={`${group.namespace}-heading`} data-namespace={group.namespace}>
+						<h2 id={`${group.namespace}-heading`}>{group.title}</h2>
+						<p class="text-zinc-400">
+							Series namespace: <code>{group.namespace}</code>
+						</p>
+						<div class="not-prose space-y-4 mt-5">
+							{group.posts.map(post => {
+								const urlSlug = post.data.slug || post.id;
+								const isAIPost = post.data.tags && post.data.tags.some((tag: string) => tag.toLowerCase() === 'ai');
+								return (
+									<article
+										class="post-card rounded-lg border border-white/10 bg-white/[0.02] p-5 transition-colors hover:border-white/25 hover:bg-white/[0.04]"
+										data-namespace={post.data.namespace || ''}
+										data-tier={post.data.tier || ''}
+										data-ai={isAIPost ? 'true' : 'false'}
+									>
+										<div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+											<div class="min-w-0">
+												<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-mono text-zinc-500 mb-2">
+													<span>Post {post.data.post}</span>
+													<span>/</span>
+													<span>Tier {post.data.tier}</span>
+													<span>/</span>
+													<span>{post.data.date}</span>
+												</div>
+												<h3 class="text-lg sm:text-xl font-bold text-white mb-2">
+													<a href={`/posts/${urlSlug}`} class="text-white hover:text-blue-300 hover:underline decoration-blue-300/40 underline-offset-4">
+														{post.data.title}
+													</a>
+												</h3>
+												<p class="text-sm leading-relaxed text-zinc-300">{post.data.description}</p>
+												{post.data.tags && post.data.tags.length > 0 && (
+													<div class="flex flex-wrap gap-2 mt-4">
+														{post.data.tags.map((tag: string) => {
+															const isAI = tag.toLowerCase() === 'ai';
+															return (
+																<span class={`rounded-md border px-2 py-0.5 text-[11px] font-mono font-medium ${isAI ? 'text-emerald-400 bg-emerald-950/50 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'text-indigo-300 bg-indigo-950/40 border-indigo-500/20'}`}>
+																	#{tag}
+																</span>
+															);
+														})}
+													</div>
+												)}
+											</div>
+											<a href={`/posts/${urlSlug}`} class="inline-flex shrink-0 items-center self-start rounded-md border border-white/10 bg-[#0d1117] px-3 py-2 text-xs font-medium text-zinc-200 hover:border-white/25 hover:text-white transition-colors">
+												Read post <span class="ml-1">→</span>
+											</a>
+										</div>
+									</article>
 								);
 							})}
 						</div>
-						<p class="text-zinc-300 text-sm mb-4 leading-relaxed bg-[#000005] p-3 rounded-xl border border-white/10 shadow-inner shadow-black/80">{post.data.description}</p>
-						<a href={`/posts/${urlSlug}`} class="inline-flex items-center text-xs font-medium text-white hover:text-zinc-300 transition-colors mt-auto self-start">
-							Read Simulation Log <span class="ml-1">→</span>
-						</a>
-					</article>
-				)})}
-				{posts.length === 0 && <p class="text-zinc-500 italic">No architectures found yet.</p>}
-			</div>
+					</section>
+				))}
+
+				{posts.length === 0 && <p class="text-zinc-500 italic">No architecture posts found yet.</p>}
+			</article>
 
 			<footer class="mt-24 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 text-xs text-zinc-500">
 				<div>
@@ -153,25 +209,32 @@ const lastUpdated = posts.length > 0
 			const tierSelect = document.getElementById('filter-tier');
 			const aiToggle = document.getElementById('toggle-ai');
 			const cards = document.querySelectorAll('.post-card');
+			const sections = document.querySelectorAll('.series-section');
+			const indexCards = document.querySelectorAll('.series-index-card');
 			let showAI = true;
 
 			function applyFilters() {
-				const selectedNs = (nsSelect as HTMLSelectElement)?.value;
-				const selectedTier = (tierSelect as HTMLSelectElement)?.value;
+				const selectedNs = (nsSelect as HTMLSelectElement)?.value || 'all';
+				const selectedTier = (tierSelect as HTMLSelectElement)?.value || 'all';
 
 				cards.forEach(card => {
 					const matchesNs = selectedNs === 'all' || card.getAttribute('data-namespace') === selectedNs;
 					const matchesTier = selectedTier === 'all' || card.getAttribute('data-tier') === selectedTier;
 					const cardIsAI = card.getAttribute('data-ai') === 'true';
 					const matchesAI = showAI || !cardIsAI;
+					const isVisible = matchesNs && matchesTier && matchesAI;
 
-					if (matchesNs && matchesTier && matchesAI) {
-						card.classList.remove('hidden');
-						card.classList.add('flex');
-					} else {
-						card.classList.add('hidden');
-						card.classList.remove('flex');
-					}
+					card.classList.toggle('hidden', !isVisible);
+				});
+
+				sections.forEach(section => {
+					const hasVisibleCards = section.querySelectorAll('.post-card:not(.hidden)').length > 0;
+					section.classList.toggle('hidden', !hasVisibleCards);
+				});
+
+				indexCards.forEach(indexCard => {
+					const matchesNs = selectedNs === 'all' || indexCard.getAttribute('data-namespace') === selectedNs;
+					indexCard.classList.toggle('hidden', !matchesNs);
 				});
 			}
 
@@ -189,31 +252,6 @@ const lastUpdated = posts.length > 0
 
 			nsSelect?.addEventListener('change', applyFilters);
 			tierSelect?.addEventListener('change', applyFilters);
-
-			// Tooltip: tap to toggle on mobile, hover handled by CSS
-			const infoBtn = document.getElementById('ai-info-btn');
-			const infoTooltip = document.getElementById('ai-info-tooltip');
-			let tooltipOpen = false;
-
-			infoBtn?.addEventListener('click', (e) => {
-				e.stopPropagation();
-				tooltipOpen = !tooltipOpen;
-				if (tooltipOpen) {
-					infoTooltip?.classList.remove('opacity-0', 'pointer-events-none');
-					infoTooltip?.classList.add('opacity-100');
-				} else {
-					infoTooltip?.classList.add('opacity-0', 'pointer-events-none');
-					infoTooltip?.classList.remove('opacity-100');
-				}
-			});
-
-			document.addEventListener('click', () => {
-				if (tooltipOpen) {
-					tooltipOpen = false;
-					infoTooltip?.classList.add('opacity-0', 'pointer-events-none');
-					infoTooltip?.classList.remove('opacity-100');
-				}
-			});
 		</script>
 	</body>
 </html>

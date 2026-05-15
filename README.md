@@ -1,74 +1,78 @@
-# System Architecture Simulations
+# System Architecture Notes
 
-Exploring foundational system architectures—dynamically deployed, stress-tested, and documented on a bare-metal Kubernetes cluster.
+An Astro blog for writing architecture posts from Markdown files under
+`architectures/<slug>/README.md`.
 
-## 🚀 Overview
+The blog itself is deployed as a Docker container. GitHub Actions builds and
+pushes the image to GitHub Container Registry, then triggers Watchtower on the
+host so the running container updates automatically.
 
-This repository houses a 12-part technical blog series aimed at simulating famous structural models (Monolithic, Microservices, Event-Driven, etc.) as actual, functioning deployments on a local Kubernetes cluster. 
-
-Each pattern gets its own simulated workload, Kubernetes manifest package, and post-mortem review detailing trade-offs, scaling behaviors, and edge-cases.
-
-### The Stack
-- **Hardware**: Raspberry Pi 5 (16GB RAM) cluster
-- **Infrastructure**: k3s (Lightweight Kubernetes), Flannel/Cilium CNI, Traefik
-- **Blog Engine**: Astro v6 (Static Site Generation via modern Content Layer API)
-- **Styling**: Tailwind CSS v4 featuring `@tailwindcss/typography` & dark-mode styling mimicking GitHub schema.
-
----
-
-## 🏗️ Repository Structure
+## Repository Structure
 
 ```text
 /
-├── architectures/             ← Source of truth for all simulation posts and code
-│   ├── 01-monolithic/
-│   │   ├── k8s/               ← Namespace, deployments, services for this architecture
-│   │   └── README.md          ← The write-up/blog-post parsed by Astro
-│   └── ...
-├── src/                       ← Astro Blog Engine
-│   ├── content.config.ts      ← Glob loader map for external architectures/ folder
-│   ├── pages/                 
-│   │   ├── index.astro        ← Homepage with dashboard stats
-│   │   └── posts/[...id].astro ← Dynamic route generator mapping K8s READMEs to URLs
+├── architectures/
+│   └── <slug>/
+│       └── README.md          # Blog post content parsed by Astro
+├── deployments/
+│   └── <slug>/
+│       └── README.md          # Deployment notes for the matching post
+├── src/
+│   ├── content.config.ts      # Astro content collection config
+│   ├── pages/
 │   └── styles/
-└── package.json
+├── docker-compose.yml         # Runtime services: blog + Watchtower
+├── Dockerfile                 # Astro build + Nginx static serving
+└── .github/workflows/deploy.yml
 ```
 
+## Writing Posts
+
+Each post lives at `architectures/<slug>/README.md` and needs frontmatter that
+matches `src/content.config.ts`.
+
+```markdown
 ---
+title: "Post Title"
+description: "Short summary for the post list."
+post: 1
+tier: 1
+namespace: topic-or-series-name
+slug: optional-custom-slug
+date: "2026-05-15"
+tags: ["astro", "blog"]
+---
+```
 
-## 🛠️ How to View the Blog Locally
+The homepage groups posts by `namespace`, treating each namespace as a series.
 
-This frontend is powered by [Astro](https://astro.build/). Content is automatically generated via glob loaders traversing the `architectures/` namespace.
+## Local Development
 
 ```bash
-# 1. Install dependencies (Bun recommended)
 bun install
-
-# 2. Start the local development server with hot-reload
 bun run dev
-
-# 3. Build for production (outputs to ./dist)
 bun run build
 ```
 
----
-
-## ☸️ How to Run the Infrastructure Simulations
-
-If you want to spin up any of the architectural patterns documented in this repository onto your own cluster:
+If you use npm instead:
 
 ```bash
-# Example: Deploying the monolithic simulation
-# Always apply the namespace first
-kubectl apply -f architectures/01-monolithic/k8s/namespace.yaml
-
-# Apply the structural deployments/services
-kubectl apply -f architectures/01-monolithic/k8s/
-
-# Monitor the simulation boot process
-kubectl get pods -n monolithic-arch -w
+npm install
+npm run dev
+npm run build
 ```
-> **Storage Note:** Ensure persistent volumes correctly bind to external SSDs if deploying IOPS-heavy simulations. Avoid utilizing SD card boot storage for database state tracking.
 
----
-_Built by Advaith Narayanan ([Glitchy](https://glitchy.systems/))_
+## Deployment
+
+The live deployment is Docker-based:
+
+1. Push to `main`.
+2. GitHub Actions builds `ghcr.io/glitchyi/blog:latest` for `linux/arm64`.
+3. GitHub Actions pushes the image to GHCR.
+4. GitHub Actions calls the Watchtower webhook.
+5. Watchtower pulls the new image and recreates `astro-app`.
+
+See [deployments/00-setup/README.md](deployments/00-setup/README.md) for the
+full Watchtower and host setup.
+
+_Built by Advaith Narayanan ([Glitchy](https://glitchy.systems/))._
