@@ -51,16 +51,13 @@ Each post must include frontmatter compatible with `src/content.config.ts`:
 title: "Post Title"
 description: "Short summary for the post list."
 post: 1
-tier: 1
-namespace: topic-or-project-name
 slug: optional-custom-slug
 date: "2026-05-15"
-tags: ["astro", "blog"]
+tags: ["tier-1", "astro", "blog"]
 ---
 ```
 
-Use `namespace` as a topic/project grouping for filtering in the blog UI. It is
-not an infrastructure namespace requirement.
+Use `tags` for topic grouping and filtering in the blog UI.
 
 ## Post Guidelines
 

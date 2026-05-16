@@ -2,20 +2,18 @@
 title: "Setting Up The GitOps Pipeline"
 description: "Bootstrapping an automated deployment pipeline for my Raspberry Pi blog using GitHub Actions, GHCR, Watchtower webhooks, and Cloudflare Tunnels."
 post: 0
-tier: 1
-namespace: gitops-blog-arch
 slug: setup
 date: "2026-04-03"
-tags: ["gitops", "astro", "watchtower", "docker", "cloudflare", "ai"]
+tags: ["tier-1", "gitops", "astro", "watchtower", "docker", "cloudflare", "ai"]
 ---
 
-# Post 0: The Automated Architecture Blog Setup
+# Post 0: The Automated Blog Setup
 
 > A frictionless GitOps pipeline: push to `main`, GitHub builds a `linux/arm64` container, pushes it to GHCR, and webhooks a Raspberry Pi via a Cloudflare Tunnel to swap the live container in seconds.
 
 ## The Problem This Solves
 
-Writing and maintaining these architectural simulations involves a lot of trial, error, deploy, and teardown. If publishing a blog update required manually SSH-ing into the Raspberry Pi, pulling images, and restarting containers every time a typo was fixed, the friction would kill the series before it began. A set-and-forget GitOps pipeline keeps the focus on architecture and documentation.
+Writing and maintaining a blog involves a lot of small edits, deploys, and follow-up fixes. If publishing an update required manually SSH-ing into the Raspberry Pi, pulling images, and restarting containers every time a typo was fixed, the friction would slow publishing down. A set-and-forget GitOps pipeline keeps the focus on writing and documentation.
 
 ## Architecture Overview
 

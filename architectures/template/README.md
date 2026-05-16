@@ -2,11 +2,9 @@
 title: "Simulating Template Architecture"
 description: "A brief description of what this architecture solves and how it behaves."
 post: 99
-tier: 2
-namespace: template-arch
 slug: "template"
 date: "YYYY-MM-DD"
-tags: ["kubernetes", "template", "k3s"]
+tags: ["tier-2", "kubernetes", "template", "k3s"]
 ---
 
 # Post X: [Architecture Name]

@@ -7,8 +7,6 @@ const architectures = defineCollection({
     title: z.string(),
     description: z.string(),
     post: z.number(),
-    tier: z.number(),
-    namespace: z.string(),
     slug: z.string().optional(),
     date: z.string(),
     tags: z.array(z.string()).optional(),

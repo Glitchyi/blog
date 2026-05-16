@@ -6,35 +6,10 @@ let posts = await getCollection('architectures');
 posts = posts.filter(post => post.data.slug !== 'template');
 posts.sort((a, b) => a.data.post - b.data.post);
 
-const seriesMap = new Map<string, typeof posts>();
-
-for (const post of posts) {
-	const seriesName = post.data.namespace || 'uncategorized';
-	const seriesPosts = seriesMap.get(seriesName) || [];
-	seriesPosts.push(post);
-	seriesMap.set(seriesName, seriesPosts);
-}
-
-const series = Array.from(seriesMap.entries())
-	.map(([namespace, entries]) => ({
-		namespace,
-		title: namespace
-			.split('-')
-			.filter(part => part !== 'arch')
-			.map(part => part.charAt(0).toUpperCase() + part.slice(1))
-			.join(' '),
-		posts: entries.sort((a, b) => a.data.post - b.data.post),
-	}))
-	.sort((a, b) => {
-		const firstPostA = a.posts[0]?.data.post ?? 0;
-		const firstPostB = b.posts[0]?.data.post ?? 0;
-		return firstPostA - firstPostB;
-	});
-
 const totalPosts = posts.length;
-const totalSeries = series.length;
-const namespaces = [...new Set(posts.map(post => post.data.namespace))].filter(Boolean);
-const tiers = [...new Set(posts.map(post => post.data.tier))].filter(Boolean).sort((a, b) => a - b);
+const tags = [...new Set(posts.flatMap(post => post.data.tags || []))]
+	.filter(Boolean)
+	.sort((a, b) => a.localeCompare(b));
 const lastUpdated = posts.length > 0
 	? new Date(Math.max(...posts.map(post => new Date(post.data.date).getTime()))).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 	: 'Never';
@@ -47,7 +22,7 @@ const lastUpdated = posts.length > 0
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
 		<link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,300,400&display=swap" rel="stylesheet">
-		<title>Architecture Blog</title>
+		<title>Advaith's Blog</title>
 	</head>
 	<body class="bg-[#000005] text-zinc-100 antialiased min-h-screen" style="font-family: 'Satoshi', system-ui, sans-serif;">
 		<main class="max-w-4xl mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-16 border-x border-white/10 min-h-screen">
@@ -62,8 +37,6 @@ const lastUpdated = posts.length > 0
 					<div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-zinc-500 font-mono text-xs sm:text-sm mb-5">
 						<span>{totalPosts} posts</span>
 						<span class="hidden sm:inline">/</span>
-						<span>{totalSeries} series</span>
-						<span class="hidden sm:inline">/</span>
 						<span>Updated {lastUpdated}</span>
 					</div>
 					<h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">Advaith's Blog</h1>
@@ -72,13 +45,12 @@ const lastUpdated = posts.length > 0
 					</p>
 				</header>
 
-				<section aria-labelledby="series-index">
-					<h2 id="series-index">Series Index</h2>
+				<section aria-labelledby="posts">
+					<h2 id="posts">Posts</h2>
 					<details class="not-prose group mb-6 rounded-md border border-white/10 bg-[#0d1117] overflow-hidden">
 						<summary class="flex cursor-pointer items-center justify-between px-4 py-2 hover:bg-white/[0.02] transition-colors list-none select-none [&::-webkit-details-marker]:hidden">
 							<div class="flex items-center gap-3">
 								<span class="font-mono text-zinc-300 font-bold text-xs">Filter posts</span>
-								<span class="px-2 py-0.5 rounded-[4px] border border-white/10 text-[10px] text-zinc-400 bg-[#000005]">Series aware</span>
 							</div>
 							<div class="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
 								<svg class="w-3 h-3 group-open:hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
@@ -90,17 +62,10 @@ const lastUpdated = posts.length > 0
 						<div class="border-t border-white/10 p-4 bg-[#000005]">
 							<div class="flex flex-col sm:flex-row gap-4">
 								<div class="flex flex-col gap-1.5 w-full sm:w-auto">
-									<label class="text-[10px] font-mono uppercase text-zinc-500 tracking-wider" for="filter-namespace">Series / Topic</label>
-									<select id="filter-namespace" class="bg-[#0d1117] border border-white/10 rounded-md text-zinc-300 text-sm px-3 py-1.5 focus:border-white/20 focus:ring-1 focus:ring-white/20 outline-none cursor-pointer">
-										<option value="all">Everything</option>
-										{namespaces.map(namespace => <option value={namespace}>{namespace}</option>)}
-									</select>
-								</div>
-								<div class="flex flex-col gap-1.5 w-full sm:w-auto">
-									<label class="text-[10px] font-mono uppercase text-zinc-500 tracking-wider" for="filter-tier">System Complexity</label>
-									<select id="filter-tier" class="bg-[#0d1117] border border-white/10 rounded-md text-zinc-300 text-sm px-3 py-1.5 focus:border-white/20 focus:ring-1 focus:ring-white/20 outline-none cursor-pointer">
-										<option value="all">All Tiers</option>
-										{tiers.map(tier => <option value={tier}>Tier {tier}</option>)}
+									<label class="text-[10px] font-mono uppercase text-zinc-500 tracking-wider" for="filter-tag">Tag</label>
+									<select id="filter-tag" class="bg-[#0d1117] border border-white/10 rounded-md text-zinc-300 text-sm px-3 py-1.5 focus:border-white/20 focus:ring-1 focus:ring-white/20 outline-none cursor-pointer">
+										<option value="all">All Tags</option>
+										{tags.map(tag => <option value={tag.toLowerCase()}>{tag}</option>)}
 									</select>
 								</div>
 								<div class="flex flex-col gap-1.5 w-full sm:w-auto">
@@ -113,80 +78,53 @@ const lastUpdated = posts.length > 0
 							</div>
 						</div>
 					</details>
-					<div class="not-prose grid gap-3 sm:grid-cols-2">
-						{series.map(group => (
-							<a href={`#${group.namespace}`} class="series-index-card block rounded-lg border border-white/10 bg-white/[0.02] p-4 hover:border-white/25 hover:bg-white/[0.04] transition-colors" data-namespace={group.namespace}>
-								<div class="flex items-start justify-between gap-3">
-									<div>
-										<h3 class="text-base font-bold text-white mb-1">{group.title}</h3>
-										<p class="text-xs font-mono text-zinc-500">{group.namespace}</p>
+					<div class="not-prose space-y-4 mt-5">
+						{posts.map(post => {
+							const urlSlug = post.data.slug || post.id;
+							const isAIPost = post.data.tags && post.data.tags.some((tag: string) => tag.toLowerCase() === 'ai');
+							return (
+								<article
+									class="post-card rounded-lg border border-white/10 bg-white/[0.02] p-5 transition-colors hover:border-white/25 hover:bg-white/[0.04]"
+									data-tags={(post.data.tags || []).map((tag: string) => tag.toLowerCase()).join(' ')}
+									data-ai={isAIPost ? 'true' : 'false'}
+								>
+									<div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+										<div class="min-w-0">
+											<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-mono text-zinc-500 mb-2">
+												<span>Post {post.data.post}</span>
+												<span>/</span>
+												<span>{post.data.date}</span>
+											</div>
+											<h3 class="text-lg sm:text-xl font-bold text-white mb-2">
+												<a href={`/posts/${urlSlug}`} class="text-white hover:text-blue-300 hover:underline decoration-blue-300/40 underline-offset-4">
+													{post.data.title}
+												</a>
+											</h3>
+											<p class="text-sm leading-relaxed text-zinc-300">{post.data.description}</p>
+											{post.data.tags && post.data.tags.length > 0 && (
+												<div class="flex flex-wrap gap-2 mt-4">
+													{post.data.tags.map((tag: string) => {
+														const isAI = tag.toLowerCase() === 'ai';
+														return (
+															<span class={`rounded-md border px-2 py-0.5 text-[11px] font-mono font-medium ${isAI ? 'text-emerald-400 bg-emerald-950/50 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'text-indigo-300 bg-indigo-950/40 border-indigo-500/20'}`}>
+																#{tag}
+															</span>
+														);
+													})}
+												</div>
+											)}
+										</div>
+										<a href={`/posts/${urlSlug}`} class="inline-flex shrink-0 items-center self-start rounded-md border border-white/10 bg-[#0d1117] px-3 py-2 text-xs font-medium text-zinc-200 hover:border-white/25 hover:text-white transition-colors">
+											Read post <span class="ml-1">→</span>
+										</a>
 									</div>
-									<span class="shrink-0 rounded-md border border-white/10 bg-[#0d1117] px-2 py-1 text-xs font-mono text-zinc-400">
-										{group.posts.length} {group.posts.length === 1 ? 'post' : 'posts'}
-									</span>
-								</div>
-							</a>
-						))}
+								</article>
+							);
+						})}
 					</div>
 				</section>
 
-				{series.map(group => (
-					<section class="series-section" id={group.namespace} aria-labelledby={`${group.namespace}-heading`} data-namespace={group.namespace}>
-						<h2 id={`${group.namespace}-heading`}>{group.title}</h2>
-						<p class="text-zinc-400">
-							Series namespace: <code>{group.namespace}</code>
-						</p>
-						<div class="not-prose space-y-4 mt-5">
-							{group.posts.map(post => {
-								const urlSlug = post.data.slug || post.id;
-								const isAIPost = post.data.tags && post.data.tags.some((tag: string) => tag.toLowerCase() === 'ai');
-								return (
-									<article
-										class="post-card rounded-lg border border-white/10 bg-white/[0.02] p-5 transition-colors hover:border-white/25 hover:bg-white/[0.04]"
-										data-namespace={post.data.namespace || ''}
-										data-tier={post.data.tier || ''}
-										data-ai={isAIPost ? 'true' : 'false'}
-									>
-										<div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-											<div class="min-w-0">
-												<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-mono text-zinc-500 mb-2">
-													<span>Post {post.data.post}</span>
-													<span>/</span>
-													<span>Tier {post.data.tier}</span>
-													<span>/</span>
-													<span>{post.data.date}</span>
-												</div>
-												<h3 class="text-lg sm:text-xl font-bold text-white mb-2">
-													<a href={`/posts/${urlSlug}`} class="text-white hover:text-blue-300 hover:underline decoration-blue-300/40 underline-offset-4">
-														{post.data.title}
-													</a>
-												</h3>
-												<p class="text-sm leading-relaxed text-zinc-300">{post.data.description}</p>
-												{post.data.tags && post.data.tags.length > 0 && (
-													<div class="flex flex-wrap gap-2 mt-4">
-														{post.data.tags.map((tag: string) => {
-															const isAI = tag.toLowerCase() === 'ai';
-															return (
-																<span class={`rounded-md border px-2 py-0.5 text-[11px] font-mono font-medium ${isAI ? 'text-emerald-400 bg-emerald-950/50 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'text-indigo-300 bg-indigo-950/40 border-indigo-500/20'}`}>
-																	#{tag}
-																</span>
-															);
-														})}
-													</div>
-												)}
-											</div>
-											<a href={`/posts/${urlSlug}`} class="inline-flex shrink-0 items-center self-start rounded-md border border-white/10 bg-[#0d1117] px-3 py-2 text-xs font-medium text-zinc-200 hover:border-white/25 hover:text-white transition-colors">
-												Read post <span class="ml-1">→</span>
-											</a>
-										</div>
-									</article>
-								);
-							})}
-						</div>
-					</section>
-				))}
-
-				{posts.length === 0 && <p class="text-zinc-500 italic">No architecture posts found yet.</p>}
+				{posts.length === 0 && <p class="text-zinc-500 italic">No posts found yet.</p>}
 			</article>
 
 			<footer class="mt-24 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 text-xs text-zinc-500">
@@ -205,36 +143,22 @@ const lastUpdated = posts.length > 0
 		</main>
 
 		<script>
-			const nsSelect = document.getElementById('filter-namespace');
-			const tierSelect = document.getElementById('filter-tier');
+			const tagSelect = document.getElementById('filter-tag');
 			const aiToggle = document.getElementById('toggle-ai');
 			const cards = document.querySelectorAll('.post-card');
-			const sections = document.querySelectorAll('.series-section');
-			const indexCards = document.querySelectorAll('.series-index-card');
 			let showAI = true;
 
 			function applyFilters() {
-				const selectedNs = (nsSelect as HTMLSelectElement)?.value || 'all';
-				const selectedTier = (tierSelect as HTMLSelectElement)?.value || 'all';
+				const selectedTag = (tagSelect as HTMLSelectElement)?.value || 'all';
 
 				cards.forEach(card => {
-					const matchesNs = selectedNs === 'all' || card.getAttribute('data-namespace') === selectedNs;
-					const matchesTier = selectedTier === 'all' || card.getAttribute('data-tier') === selectedTier;
+					const cardTags = (card.getAttribute('data-tags') || '').split(' ');
+					const matchesTag = selectedTag === 'all' || cardTags.includes(selectedTag);
 					const cardIsAI = card.getAttribute('data-ai') === 'true';
 					const matchesAI = showAI || !cardIsAI;
-					const isVisible = matchesNs && matchesTier && matchesAI;
+					const isVisible = matchesTag && matchesAI;
 
 					card.classList.toggle('hidden', !isVisible);
-				});
-
-				sections.forEach(section => {
-					const hasVisibleCards = section.querySelectorAll('.post-card:not(.hidden)').length > 0;
-					section.classList.toggle('hidden', !hasVisibleCards);
-				});
-
-				indexCards.forEach(indexCard => {
-					const matchesNs = selectedNs === 'all' || indexCard.getAttribute('data-namespace') === selectedNs;
-					indexCard.classList.toggle('hidden', !matchesNs);
 				});
 			}
 
@@ -250,8 +174,7 @@ const lastUpdated = posts.length > 0
 				applyFilters();
 			});
 
-			nsSelect?.addEventListener('change', applyFilters);
-			tierSelect?.addEventListener('change', applyFilters);
+			tagSelect?.addEventListener('change', applyFilters);
 		</script>
 	</body>
 </html>

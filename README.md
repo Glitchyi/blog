@@ -1,6 +1,6 @@
-# System Architecture Notes
+# Blog
 
-An Astro blog for writing architecture posts from Markdown files under
+An Astro blog for writing posts from Markdown files under
 `architectures/<slug>/README.md`.
 
 The blog itself is deployed as a Docker container. GitHub Actions builds and
@@ -36,15 +36,13 @@ matches `src/content.config.ts`.
 title: "Post Title"
 description: "Short summary for the post list."
 post: 1
-tier: 1
-namespace: topic-or-series-name
 slug: optional-custom-slug
 date: "2026-05-15"
-tags: ["astro", "blog"]
+tags: ["tier-1", "astro", "blog"]
 ---
 ```
 
-The homepage groups posts by `namespace`, treating each namespace as a series.
+The homepage lists posts in `post` order and can filter them by `tags`.
 
 ## Local Development
 
