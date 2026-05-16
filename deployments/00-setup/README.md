@@ -82,6 +82,18 @@ volumes:
 
 The `/config.json` mount lets Watchtower use the GHCR login created above.
 
+The workflow targets only the blog image when it calls Watchtower:
+
+```text
+POST $WATCHTOWER_URL/v1/update?image=ghcr.io/glitchyi/blog:latest
+Authorization: Bearer $WATCHTOWER_TOKEN
+```
+
+The GitHub Actions `curl` command uses HTTP fail mode, retries transient
+failures, and has explicit timeouts. If the Watchtower token, URL, tunnel, or
+Watchtower API is wrong, the deployment job should fail instead of silently
+passing.
+
 ## GitHub Actions Secrets
 
 Configure these repository secrets:
@@ -121,7 +133,7 @@ After pushing a new image to GHCR, trigger Watchtower manually:
 ```bash
 curl -X POST \
   -H "Authorization: Bearer $WATCHTOWER_TOKEN" \
-  http://localhost:3003/v1/update
+  "http://localhost:3003/v1/update?image=ghcr.io/glitchyi/blog:latest"
 ```
 
 Expected result: Watchtower scans the image, pulls a newer digest when one
