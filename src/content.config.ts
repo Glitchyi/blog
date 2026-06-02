@@ -10,6 +10,7 @@ const architectures = defineCollection({
     slug: z.string().optional(),
     date: z.string(),
     tags: z.array(z.string()).optional(),
+    complete: z.literal(false).optional(),
   }),
 });
 

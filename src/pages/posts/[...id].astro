@@ -6,6 +6,7 @@ export async function getStaticPaths() {
 	const posts = await getCollection('architectures');
 	return posts
 		.filter(post => post.data.slug !== 'template')
+		.filter(post => import.meta.env.DEV || post.data.complete !== false)
 		.map(post => ({
 			params: { id: post.data.slug || post.id },
 			props: { post },
@@ -17,6 +18,7 @@ const { Content } = await render(post);
 const isAIPost = post.data.tags && post.data.tags.some((t: string) => t.toLowerCase() === 'ai');
 const allPosts = (await getCollection('architectures'))
 	.filter(entry => entry.data.slug !== 'template')
+	.filter(entry => import.meta.env.DEV || entry.data.complete !== false)
 	.sort((a, b) => a.data.post - b.data.post);
 const postIndex = allPosts.findIndex(entry => entry.id === post.id);
 const previousPost = postIndex > 0 ? allPosts[postIndex - 1] : undefined;

@@ -4,14 +4,18 @@ import '../styles/global.css';
 
 let posts = await getCollection('architectures');
 posts = posts.filter(post => post.data.slug !== 'template');
+if (!import.meta.env.DEV) {
+	posts = posts.filter(post => post.data.complete !== false);
+}
 posts.sort((a, b) => a.data.post - b.data.post);
 
-const totalPosts = posts.length;
+const completePosts = posts.filter(post => post.data.complete !== false);
+const totalPosts = completePosts.length;
 const tags = [...new Set(posts.flatMap(post => post.data.tags || []))]
 	.filter(Boolean)
 	.sort((a, b) => a.localeCompare(b));
-const lastUpdated = posts.length > 0
-	? new Date(Math.max(...posts.map(post => new Date(post.data.date).getTime()))).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+const lastUpdated = completePosts.length > 0
+	? new Date(Math.max(...completePosts.map(post => new Date(post.data.date).getTime()))).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 	: 'Never';
 ---
 
@@ -82,11 +86,16 @@ const lastUpdated = posts.length > 0
 						{posts.map(post => {
 							const urlSlug = post.data.slug || post.id;
 							const isAIPost = post.data.tags && post.data.tags.some((tag: string) => tag.toLowerCase() === 'ai');
+							const isComplete = post.data.complete !== false;
 							return (
 								<article
-									class="post-card rounded-lg border border-white/10 bg-white/[0.02] p-5 transition-colors hover:border-white/25 hover:bg-white/[0.04]"
+									class:list={[
+										'post-card rounded-lg border border-white/10 bg-white/[0.02] p-5 transition-colors hover:border-white/25 hover:bg-white/[0.04]',
+										{ hidden: !isComplete },
+									]}
 									data-tags={(post.data.tags || []).map((tag: string) => tag.toLowerCase()).join(' ')}
 									data-ai={isAIPost ? 'true' : 'false'}
+									data-complete={isComplete ? 'true' : 'false'}
 								>
 									<div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 										<div class="min-w-0">
@@ -147,6 +156,7 @@ const lastUpdated = posts.length > 0
 			const aiToggle = document.getElementById('toggle-ai');
 			const cards = document.querySelectorAll('.post-card');
 			let showAI = true;
+			let showIncomplete = false;
 
 			function applyFilters() {
 				const selectedTag = (tagSelect as HTMLSelectElement)?.value || 'all';
@@ -156,9 +166,21 @@ const lastUpdated = posts.length > 0
 					const matchesTag = selectedTag === 'all' || cardTags.includes(selectedTag);
 					const cardIsAI = card.getAttribute('data-ai') === 'true';
 					const matchesAI = showAI || !cardIsAI;
-					const isVisible = matchesTag && matchesAI;
+					const cardIsComplete = card.getAttribute('data-complete') !== 'false';
+					const matchesComplete = showIncomplete || cardIsComplete;
+					const isVisible = matchesTag && matchesAI && matchesComplete;
 
 					card.classList.toggle('hidden', !isVisible);
+				});
+			}
+
+			if (import.meta.env.DEV) {
+				Object.defineProperty(window, 'debug', {
+					value: () => {
+						showIncomplete = true;
+						applyFilters();
+					},
+					configurable: true,
 				});
 			}
 
