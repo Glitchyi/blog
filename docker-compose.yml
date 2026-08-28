@@ -4,6 +4,9 @@ services:
     # e.g., image: ghcr.io/octocat/architecture-blog:latest
     image: ghcr.io/glitchyi/blog:latest
     container_name: astro-app
+    labels:
+      # Only this container may be updated by this Watchtower instance.
+      - com.centurylinklabs.watchtower.enable=true
     ports:
       # Nginx inside the container uses port 80 by default.
       # You can change the host port if "80" conflicts with other services on the Pi.
@@ -18,9 +21,13 @@ services:
   watchtower:
     image: ghcr.io/nicholas-fedor/watchtower:latest
     container_name: watchtower
+    labels:
+      # Never let Watchtower stop itself during an API-triggered update.
+      - com.centurylinklabs.watchtower.enable=false
     ports:
-      # Expose Watchtower's API locally so your Cloudflare Tunnel can reach it
-      - "3003:8080"
+      # The host-level Cloudflare Tunnel can reach loopback; do not expose the
+      # privileged Docker update API directly to the LAN.
+      - "127.0.0.1:3003:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /home/glitchy/.docker/config.json:/config.json
@@ -30,6 +37,8 @@ services:
       - WATCHTOWER_STOP_TIMEOUT=0s
       # Enable webhook mode
       - WATCHTOWER_HTTP_API_UPDATE=true
+      # Ignore every container unless it explicitly opts in with the enable label.
+      - WATCHTOWER_LABEL_ENABLE=true
       # Secure the webhook with a token from the .env file
       - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_TOKEN}
     restart: unless-stopped

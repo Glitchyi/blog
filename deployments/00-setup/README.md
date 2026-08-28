@@ -70,7 +70,8 @@ docker compose up -d
 The current `docker-compose.yml` runs:
 
 - `astro-app`: serves `ghcr.io/glitchyi/blog:latest` on host port `3002`.
-- `watchtower`: exposes the HTTP API on host port `3003`.
+- `watchtower`: exposes the HTTP API only on host loopback port `3003`, where
+  the host-level Cloudflare Tunnel can reach it.
 
 Watchtower mounts:
 
@@ -81,6 +82,11 @@ volumes:
 ```
 
 The `/config.json` mount lets Watchtower use the GHCR login created above.
+
+Watchtower runs with `WATCHTOWER_LABEL_ENABLE=true`. Only `astro-app` has the
+`com.centurylinklabs.watchtower.enable=true` label; Watchtower itself is
+explicitly labeled `false`. This prevents an unfiltered request from updating
+unrelated containers or stopping Watchtower during its own update session.
 
 The workflow targets only the blog image when it calls Watchtower:
 
@@ -104,12 +110,12 @@ WATCHTOWER_URL=https://your-watchtower-webhook-hostname
 ```
 
 `WATCHTOWER_URL` should point at the public HTTPS endpoint that forwards to
-Watchtower's local port `3003`. The workflow appends `/v1/update`, so the final
-request is:
+Watchtower's local port `3003`. The workflow appends the targeted update path,
+so the final request is:
 
 ```text
-POST $WATCHTOWER_URL/v1/update
-Authorization: Bearer $WATCHTOWER_TOKEN
+POST $WATCHTOWER_URL/v1/update?image=ghcr.io/glitchyi/blog:latest
+Authorization: Bearer ***
 ```
 
 ## Cloudflare Tunnel Example
